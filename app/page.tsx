@@ -20,12 +20,14 @@ export default function Dashboard() {
   const [funds, setFunds] = useState<Fund[]>([])
   const [selectedFund, setSelectedFund] = useState<Fund | null>(null)
   const [fundNews, setFundNews] = useState<(NewsArticle & { relevance_score?: number })[]>([])
+  const [marketNews, setMarketNews] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null)
 
   useEffect(() => {
     fetchFunds()
+    fetchMarketNews()
   }, [])
 
   const handleRealTimeUpdate = () => {
@@ -73,6 +75,32 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("Error fetching fund details:", error)
+    }
+  }
+
+  const fetchMarketNews = async () => {
+    try {
+      const response = await fetch('/api/news?limit=10&days=7')
+      if (response.ok) {
+        const data = await response.json()
+        // Transform the news data to match the expected format
+        const transformedNews = (data.data || []).map((article: any) => ({
+          id: article.id,
+          title: article.title,
+          content: article.content,
+          source: article.source,
+          url: article.url,
+          published_at: article.published_at,
+          sentiment_score: article.sentiment_score,
+          processed_at: article.processed_at,
+          created_at: article.published_at, // fallback
+          relevance_score: article.relevance_score
+        }))
+        setMarketNews(transformedNews)
+      }
+    } catch (error) {
+      console.error("Error fetching market news:", error)
+      setMarketNews([])
     }
   }
 
@@ -233,7 +261,7 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          <NewsFeed articles={fundNews.slice(0, 5)} title="Latest Market News" />
+          <NewsFeed articles={marketNews.slice(0, 5)} title="Latest Market News" />
         </TabsContent>
 
         <TabsContent value="funds" className="space-y-6">

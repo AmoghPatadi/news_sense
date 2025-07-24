@@ -57,9 +57,10 @@ export async function POST() {
         console.error(`Error processing batch ${Math.floor(i/batchSize) + 1}:`, batchError)
       }
       
-      // Add delay between batches
+      // Add longer delay between batches to be more respectful
       if (i + batchSize < funds.length) {
-        await new Promise(resolve => setTimeout(resolve, config.scraping.delayMs))
+        console.log('Waiting between stock batches...')
+        await new Promise(resolve => setTimeout(resolve, config.scraping.delayMs * 3)) // Triple the delay
       }
     }
 
@@ -74,7 +75,14 @@ export async function POST() {
       
       try {
         console.log(`Scraping news for ${fund.ticker}...`)
-        const newsArticles = await scrapeNewsForStock(fund.ticker, 3)
+        
+        // Add timeout wrapper for news scraping
+        const newsArticles = await Promise.race([
+          scrapeNewsForStock(fund.ticker, 3),
+          new Promise<any[]>((_, reject) => 
+            setTimeout(() => reject(new Error(`News scraping timeout for ${fund.ticker}`)), 120000) // 2 minute timeout
+          )
+        ])
         
         for (const article of newsArticles) {
           // Insert article into database
@@ -111,13 +119,32 @@ export async function POST() {
             processedArticles++
           }
         }
+        
+        // Update daily sentiment summary for this fund after processing news
+        try {
+          const { error: sentimentError } = await supabase.rpc('update_daily_sentiment_summary', {
+            target_date: new Date().toISOString().split('T')[0]
+          })
+          
+          if (sentimentError) {
+            console.warn(`Failed to update sentiment summary for ${fund.ticker}:`, sentimentError.message)
+          } else {
+            console.log(`✅ Updated sentiment summary for ${fund.ticker}`)
+          }
+        } catch (sentimentUpdateError) {
+          console.warn(`Error updating sentiment summary for ${fund.ticker}:`, sentimentUpdateError)
+        }
+        
       } catch (newsError) {
         console.error(`Error processing news for ${fund.ticker}:`, newsError)
+        // Continue with next fund instead of failing completely
+        console.log(`Skipping news for ${fund.ticker} due to error, continuing with next fund...`)
       }
       
-      // Add delay between news scraping
+      // Add much longer delay between news scraping to avoid rate limiting
       if (i < newsUpdateCount - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        console.log(`Waiting before processing next fund...`)
+        await new Promise(resolve => setTimeout(resolve, config.scraping.delayMs * 4)) // Use config delay * 4
       }
     }
 
