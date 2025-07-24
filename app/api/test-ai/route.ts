@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server"
 import { generateText } from "ai"
-import { groq } from "@ai-sdk/groq"
+import { createGroq } from "@ai-sdk/groq"
 import { analyzeSentimentHF, extractFinancialEntities } from "@/lib/huggingface"
 import { config } from "@/lib/config"
+
+// Initialize Groq client
+const groq = createGroq({
+  apiKey: config.groq.apiKey,
+})
 
 export async function POST(request: Request) {
   try {
