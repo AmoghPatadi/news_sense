@@ -65,7 +65,7 @@ export function DashboardHeader() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Financial AI Dashboard</h1>
         <p className="text-muted-foreground">AI-powered fund analysis with real-time news sentiment</p>
-        <p className="text-sm text-muted-foreground mt-1">Powered by Polygon.io & OpenAI</p>
+        <p className="text-sm text-muted-foreground mt-1">Powered by Google Finance & AI Scraping</p>
       </div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
@@ -75,7 +75,7 @@ export function DashboardHeader() {
           </Badge>
           <Badge variant="outline" className="flex items-center gap-1">
             <Database className="h-3 w-3" />
-            Polygon.io
+            Google Finance
           </Badge>
           <Badge variant="outline" className="flex items-center gap-1">
             <TrendingUp className="h-3 w-3" />

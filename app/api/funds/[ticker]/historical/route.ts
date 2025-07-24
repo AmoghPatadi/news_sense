@@ -1,21 +1,22 @@
 import { NextResponse } from "next/server"
-import { fetchHistoricalData } from "@/lib/polygon"
+import { scrapeHistoricalData } from "@/lib/google-finance-scraper"
 
 export async function GET(request: Request, { params }: { params: Promise<{ ticker: string }> }) {
   try {
     const { ticker } = await params
-    const url = new URL(request.url)
-    const days = Number.parseInt(url.searchParams.get("days") || "30")
+    console.log(`Fetching historical data for ${ticker}...`)
+    
+    const historicalData = await scrapeHistoricalData(ticker.toUpperCase(), 30)
 
-    const historicalData = await fetchHistoricalData(ticker, days)
-
-    if (!historicalData) {
+    if (!historicalData || historicalData.length === 0) {
+      console.log(`No historical data found for ${ticker}`)
       return NextResponse.json({ error: "No historical data found" }, { status: 404 })
     }
 
+    console.log(`Successfully fetched ${historicalData.length} historical data points for ${ticker}`)
     return NextResponse.json(historicalData)
   } catch (error) {
-    console.error("Error fetching historical data:", error)
+    console.error(`Historical data API error for ${ticker}:`, error)
     return NextResponse.json({ error: "Failed to fetch historical data" }, { status: 500 })
   }
 }

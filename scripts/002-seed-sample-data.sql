@@ -1,13 +1,13 @@
--- Insert sample funds
+-- Insert sample funds without hardcoded prices (will be updated by data sync)
 INSERT INTO funds (ticker, name, isin, sector, last_price, daily_change) VALUES
-('SPY', 'SPDR S&P 500 ETF Trust', 'US78462F1030', 'Broad Market', 445.67, -0.0125),
-('QQQ', 'Invesco QQQ Trust', 'US46090E1038', 'Technology', 378.92, -0.0234),
-('VTI', 'Vanguard Total Stock Market ETF', 'US9229087690', 'Broad Market', 234.56, -0.0089),
-('ARKK', 'ARK Innovation ETF', 'US00214Q1040', 'Innovation', 45.23, -0.0456),
-('XLF', 'Financial Select Sector SPDR Fund', 'US81369Y5069', 'Financial', 38.91, 0.0123),
-('TSLA', 'Tesla Inc', 'US88160R1014', 'Electric Vehicles', 248.42, -0.0321),
-('AAPL', 'Apple Inc', 'US0378331005', 'Technology', 189.87, -0.0156),
-('MSFT', 'Microsoft Corporation', 'US5949181045', 'Technology', 378.85, -0.0098)
+('SPY', 'SPDR S&P 500 ETF Trust', 'US78462F1030', 'Broad Market', NULL, NULL),
+('QQQ', 'Invesco QQQ Trust', 'US46090E1038', 'Technology', NULL, NULL),
+('VTI', 'Vanguard Total Stock Market ETF', 'US9229087690', 'Broad Market', NULL, NULL),
+('ARKK', 'ARK Innovation ETF', 'US00214Q1040', 'Innovation', NULL, NULL),
+('XLF', 'Financial Select Sector SPDR Fund', 'US81369Y5069', 'Financial', NULL, NULL),
+('TSLA', 'Tesla Inc', 'US88160R1014', 'Electric Vehicles', NULL, NULL),
+('AAPL', 'Apple Inc', 'US0378331005', 'Technology', NULL, NULL),
+('MSFT', 'Microsoft Corporation', 'US5949181045', 'Technology', NULL, NULL)
 ON CONFLICT (ticker) DO NOTHING;
 
 -- Insert sample news articles

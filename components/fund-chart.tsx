@@ -33,29 +33,21 @@ export function FundChart({ ticker, name, currentPrice, dailyChange }: FundChart
         const data = await response.json()
         setHistoricalData(data)
       } else {
-        // Fallback to mock data if API fails
-        generateMockData()
+        // Show message if API fails
+        generateFallbackMessage()
       }
     } catch (error) {
       console.error("Error fetching historical data:", error)
-      generateMockData()
+      generateFallbackMessage()
     } finally {
       setIsLoading(false)
     }
   }
 
-  const generateMockData = () => {
-    const data = Array.from({ length: 30 }, (_, i) => {
-      const date = new Date()
-      date.setDate(date.getDate() - (29 - i))
-      const basePrice = currentPrice / (1 + dailyChange)
-      const randomChange = (Math.random() - 0.5) * 0.1
-      return {
-        date: date.toISOString().split("T")[0],
-        price: basePrice * (1 + randomChange * (i / 30)),
-      }
-    })
-    setHistoricalData(data)
+  const generateFallbackMessage = () => {
+    // Instead of generating mock data, show a helpful message
+    console.log(`Unable to fetch historical data for ${ticker}`)
+    setHistoricalData([])
   }
 
   const changeColor = dailyChange >= 0 ? "text-green-600" : "text-red-600"
@@ -72,14 +64,14 @@ export function FundChart({ ticker, name, currentPrice, dailyChange }: FundChart
         </CardTitle>
         <CardDescription>{name}</CardDescription>
         <div className="text-2xl font-bold">${currentPrice.toFixed(2)}</div>
-        <div className="text-xs text-muted-foreground">Powered by Polygon.io</div>
+        <div className="text-xs text-muted-foreground">Powered by Google Finance</div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="h-[200px] flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
-        ) : (
+        ) : historicalData.length > 0 ? (
           <ChartContainer
             config={{
               price: {
@@ -99,6 +91,14 @@ export function FundChart({ ticker, name, currentPrice, dailyChange }: FundChart
               </LineChart>
             </ResponsiveContainer>
           </ChartContainer>
+        ) : (
+          <div className="h-[200px] flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
+            <div className="text-center text-muted-foreground">
+              <div className="text-sm font-medium mb-1">Historical Data Unavailable</div>
+              <div className="text-xs">Chart will display when historical data is available</div>
+              <div className="text-xs mt-2">Current Price: <span className="font-medium">${currentPrice.toFixed(2)}</span></div>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

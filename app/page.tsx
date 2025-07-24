@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import type { Fund, NewsArticle } from "@/lib/types"
 import { SetupVerification } from "@/components/setup-verification"
+import { RealTimeUpdater } from "@/components/real-time-updater"
 import { AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AITestPanel } from "@/components/ai-test-panel"
@@ -21,10 +22,17 @@ export default function Dashboard() {
   const [fundNews, setFundNews] = useState<(NewsArticle & { relevance_score?: number })[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null)
 
   useEffect(() => {
     fetchFunds()
   }, [])
+
+  const handleRealTimeUpdate = () => {
+    // Refresh data when real-time update occurs
+    fetchFunds()
+    setLastUpdateTime(new Date().toLocaleTimeString())
+  }
 
   const fetchFunds = async () => {
     try {
@@ -149,6 +157,7 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <RealTimeUpdater onDataUpdate={handleRealTimeUpdate} />
       <DashboardHeader />
       <SetupVerification />
 
@@ -168,17 +177,26 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {topPerformers.map((fund) => (
-                    <div key={fund.id} className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium">{fund.ticker}</span>
-                        <span className="text-sm text-muted-foreground ml-2">${fund.last_price?.toFixed(2)}</span>
+                  {topPerformers.length > 0 ? (
+                    topPerformers.map((fund) => (
+                      <div key={fund.id} className="flex justify-between items-center">
+                        <div>
+                          <span className="font-medium">{fund.ticker}</span>
+                          <span className="text-sm text-muted-foreground ml-2">
+                            {fund.last_price ? `$${fund.last_price.toFixed(2)}` : 'Price updating...'}
+                          </span>
+                        </div>
+                        <span className="text-green-600 font-medium">
+                          {fund.daily_change ? `+${(fund.daily_change * 100).toFixed(2)}%` : '--'}
+                        </span>
                       </div>
-                      <span className="text-green-600 font-medium">
-                        +{((fund.daily_change || 0) * 100).toFixed(2)}%
-                      </span>
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      <div className="text-sm">No price data available</div>
+                      <div className="text-xs mt-1">Run "Sync Data" to update prices</div>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -190,15 +208,26 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {bottomPerformers.map((fund) => (
-                    <div key={fund.id} className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium">{fund.ticker}</span>
-                        <span className="text-sm text-muted-foreground ml-2">${fund.last_price?.toFixed(2)}</span>
+                  {bottomPerformers.length > 0 ? (
+                    bottomPerformers.map((fund) => (
+                      <div key={fund.id} className="flex justify-between items-center">
+                        <div>
+                          <span className="font-medium">{fund.ticker}</span>
+                          <span className="text-sm text-muted-foreground ml-2">
+                            {fund.last_price ? `$${fund.last_price.toFixed(2)}` : 'Price updating...'}
+                          </span>
+                        </div>
+                        <span className="text-red-600 font-medium">
+                          {fund.daily_change ? `${(fund.daily_change * 100).toFixed(2)}%` : '--'}
+                        </span>
                       </div>
-                      <span className="text-red-600 font-medium">{((fund.daily_change || 0) * 100).toFixed(2)}%</span>
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      <div className="text-sm">No price data available</div>
+                      <div className="text-xs mt-1">Run "Sync Data" to update prices</div>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -239,11 +268,13 @@ export default function Dashboard() {
                         <div className="font-medium">{fund.ticker}</div>
                         <div className="text-sm opacity-70 truncate">{fund.name}</div>
                         <div className="flex justify-between items-center mt-1">
-                          <span className="text-sm">${fund.last_price?.toFixed(2)}</span>
+                          <span className="text-sm">
+                            {fund.last_price ? `$${fund.last_price.toFixed(2)}` : 'N/A'}
+                          </span>
                           <span
                             className={`text-sm ${(fund.daily_change || 0) >= 0 ? "text-green-400" : "text-red-400"}`}
                           >
-                            {((fund.daily_change || 0) * 100).toFixed(2)}%
+                            {fund.daily_change ? `${((fund.daily_change || 0) * 100).toFixed(2)}%` : '--'}
                           </span>
                         </div>
                       </div>

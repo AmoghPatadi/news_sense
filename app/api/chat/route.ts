@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { generateText } from "ai"
-import { groq } from "@ai-sdk/groq"
 import { createServerClient } from "@/lib/supabase"
+import { scrapeStockData, searchStocks } from "@/lib/google-finance-scraper"
 import { config } from "@/lib/config"
 
 export async function POST(request: Request) {
@@ -10,88 +10,44 @@ export async function POST(request: Request) {
     const startTime = Date.now()
     const supabase = createServerClient()
 
-    // Extract potential ticker from question
+    // Extract ticker from question
     const tickerMatch = question.match(/\b[A-Z]{1,5}\b/g)
     const potentialTickers = tickerMatch || []
-
-    // Search for relevant funds and news
     let contextData = ""
 
     if (potentialTickers.length > 0) {
       for (const ticker of potentialTickers) {
-        const { data: fund } = await supabase
-          .from("funds")
-          .select(`
-            *,
-            fund_news_links (
-              relevance_score,
-              news_articles (
-                title,
-                content,
-                source,
-                published_at,
-                sentiment_score
-              )
-            )
-          `)
-          .eq("ticker", ticker)
-          .single()
+        // Scrape latest stock data
+        const stockData = await scrapeStockData(ticker)
 
-        if (fund) {
-          contextData += `\n\nFund: ${fund.name} (${fund.ticker})\n`
-          contextData += `Current Price: $${fund.last_price}\n`
-          contextData += `Daily Change: ${(fund.daily_change * 100).toFixed(2)}%\n`
-          contextData += `Sector: ${fund.sector}\n`
-
-          if (fund.fund_news_links && fund.fund_news_links.length > 0) {
-            contextData += "\nRecent News:\n"
-            fund.fund_news_links.slice(0, 3).forEach((link: any) => {
-              const article = link.news_articles
-              contextData += `- ${article.title} (${article.source}, Sentiment: ${article.sentiment_score?.toFixed(2) || "N/A"})\n`
-              if (article.content) {
-                contextData += `  ${article.content.substring(0, 200)}...\n`
-              }
-            })
-          }
+        if (stockData) {
+          contextData += `\n\nStock: ${stockData.name} (${stockData.ticker})\n`
+          contextData += `Current Price: $${stockData.price}\n`
+          contextData += `Change: ${(stockData.changePercent * 100).toFixed(2)}%\n`
+          contextData += `Market Cap: ${stockData.marketCap}\n`
+          contextData += `P/E Ratio: ${stockData.peRatio}\n`
+          contextData += `Day Range: ${stockData.dayRange}\n`
+          contextData += `52-Week Range: ${stockData.yearRange}\n`
+          contextData += `Volume: ${stockData.volume}\n`
         }
+
+        // Optionally scrape related news, summarize news influences and append to contextData
       }
     }
-
-    // If no specific ticker found, get general market news
+    
+    // If no specific ticker found, handle general market news
     if (!contextData) {
-      const { data: recentNews } = await supabase
-        .from("news_articles")
-        .select("title, content, source, sentiment_score, published_at")
-        .order("published_at", { ascending: false })
-        .limit(5)
-
-      if (recentNews && recentNews.length > 0) {
-        contextData = "\n\nRecent Market News:\n"
-        recentNews.forEach((article) => {
-          contextData += `- ${article.title} (${article.source}, Sentiment: ${article.sentiment_score?.toFixed(2) || "N/A"})\n`
-          if (article.content) {
-            contextData += `  ${article.content.substring(0, 150)}...\n`
-          }
-        })
-      }
+      contextData = "Sorry, could not find specific information for the provided question."
     }
 
-    const systemPrompt = `You are a financial AI assistant powered by Groq that helps users understand fund performance and market movements. 
-    
-    Use the provided context data to answer questions about funds, their performance, and related news. 
-    
-    Guidelines:
-    - Be factual and cite specific data when available
-    - Explain the connection between news events and fund performance
-    - If sentiment data is available, incorporate it into your analysis
-    - Keep responses concise but informative
-    - If you don't have enough data, say so clearly
-    - Use your knowledge of financial markets to provide insights
-    
-    Context Data: ${contextData}`
+    const systemPrompt = `You are a financial AI assistant powered by Groq that helps users understand stock performance.
+
+Use the provided context data to explain the price movements and summarize news influences. 
+
+Context Data: ${contextData}`
 
     const { text } = await generateText({
-      model: groq(config.groq.model),
+      model: config.openai.model,
       system: systemPrompt,
       prompt: question,
     })

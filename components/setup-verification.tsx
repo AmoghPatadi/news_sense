@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, AlertCircle, RefreshCw } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-import { fetchMarketStatus } from "@/lib/polygon"
 import { useToast } from "@/hooks/use-toast"
 
 interface ConnectionStatus {
@@ -47,10 +46,10 @@ export function SetupVerification() {
       setStatus((prev) => ({ ...prev, supabase: "error", database: "error" }))
     }
 
-    // Check Polygon.io connection
+    // Check Google Finance connection via API
     try {
-      const marketStatus = await fetchMarketStatus()
-      if (marketStatus) {
+      const response = await fetch('/api/market-status')
+      if (response.ok) {
         setStatus((prev) => ({ ...prev, polygon: "connected" }))
       } else {
         setStatus((prev) => ({ ...prev, polygon: "error" }))
@@ -146,8 +145,8 @@ export function SetupVerification() {
 
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div>
-              <div className="font-medium">Polygon.io</div>
-              <div className="text-sm text-muted-foreground">Market Data API</div>
+              <div className="font-medium">Google Finance</div>
+              <div className="text-sm text-muted-foreground">Market Data Scraping</div>
             </div>
             <Badge variant="secondary" className={getStatusColor(status.polygon)}>
               <div className="flex items-center gap-1">
